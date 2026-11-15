@@ -1,3 +1,5 @@
+chanprobe
+
 *.o
 debian/.debhelper
 debian/debhelper-build-stamp
@@ -5,3 +7,4 @@ debian/files
 debian/chanprobe.debhelper.log
 debian/chanprobe.substvars
 debian/chanprobe
+tests/selftest
