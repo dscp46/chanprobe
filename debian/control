@@ -1,0 +1,26 @@
+Source: chanprobe
+Section: hamradio
+Priority: optional
+Maintainer: Célestine GRAMAIZE <celestine+dev@gramaize.eu>
+Build-Depends: debhelper-compat (= 13),
+               libasound2-dev,
+               libcodec2-dev (>= 1.0),
+               libhamlib-dev (>= 4.5),
+               libsamplerate0-dev,
+               pkgconf
+Standards-Version: 4.6.2
+Rules-Requires-Root: no
+
+Package: chanprobe
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: bidirectional audio channel prober for half duplex radio links
+ chanprobe measures the amplitude and phase response of a half duplex audio
+ channel from 150 Hz to 10.5 kHz, in both directions, using an extension of
+ the ITU-T V.34 line probing signal (60 tones on a 150 Hz grid).
+ .
+ Two stations exchange tones, probe signals and their measurements (sent with
+ the codec2 FreeDV DATAC1 OFDM data modem), then both display the relative
+ amplitude, phase anomaly and per-tone SNR, plus the noise floor, the sample
+ clock offset and the continuity of the audio (dropouts, sample slips). The
+ two sides may run at 44.1 or 48 kHz. The transmitter is keyed through Hamlib.

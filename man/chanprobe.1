@@ -1,0 +1,198 @@
+.TH CHANPROBE 1 "November 2026" "chanprobe 0.3.2" "User Commands"
+.SH NAME
+chanprobe \- bidirectional audio channel prober for half duplex radio links
+.SH SYNOPSIS
+.B chanprobe
+.RB { initiator | responder | tune }
+.RI [ options ]
+.SH DESCRIPTION
+.B chanprobe
+measures the amplitude and phase response of a half duplex audio channel
+(150\(en10500\ Hz) in both directions, using an extension of the ITU\-T V.34
+line probing signal: 60 cosines on a 150\ Hz grid, with the V.34 Table 17 phases
+up to 3750\ Hz and a crest\-factor\-optimised 0/180\(de pattern above.
+Mute carriers (900, 1200, 1800, 2400, 3600, 4800, 6000, 7200, 8400, 9600\ Hz) give
+the noise and distortion floor. As in V.34, the probe is sent at two levels:
+L1 (peak \-3\ dBFS) then L2, exactly 6.02\ dB lower.
+.PP
+A session runs as follows:
+.IP 1. 4
+The responder waits for tone A (900\ Hz). The initiator sends it for 300\ ms.
+.IP 2. 4
+After t_w, the responder sends guard tone G (1200\ Hz, 200\ ms), probe L1 (1\ s),
+G (200\ ms), probe L2 (1\ s), G (200\ ms). The initiator measures.
+.IP 3. 4
+After t_w, the initiator sends G, L1, G, L2, G. The responder measures.
+.IP 4. 4
+After t_w, the responder sends its measurements (one codec2 FreeDV DATAC1
+burst: OFDM, about 1.7\ kHz wide around 1.5\ kHz, LDPC FEC, CRC\-16, about
+4.4\ s), then the initiator sends its own.
+.IP 5. 4
+Both sides display the
+.B Tx results
+(measured by the remote side on the local signal) and the
+.B Rx results
+(measured locally on the remote signal).
+.PP
+Amplitudes are in dB relative to 1050\ Hz. The phase is the anomaly of each
+carrier: received minus transmitted phase, minus the best straight\-line fit
+across the band (bulk delay and constant offset, weighted by tone power), so it
+is not referenced to any single carrier. The SNR is given per tone, in
+its 150\ Hz bin. Silent bins show their level in dBc (re the 1050\ Hz tone).
+The sample clock offset between the two sound interfaces is estimated and
+compensated, and reported in ppm; the two sides may run at different sample
+rates.
+.PP
+Each side also reports the received level of L1 (dBFS RMS; \-5.7\ dBFS RMS is
+sent) and how long it heard each 200\ ms guard tone. A shortened trailing guard
+tone means the end of the remote transmission is cut off, typically by audio
+latency inside the radio that the sound card cannot see: raise
+.B \-\-txtail
+on that side. Each side also checks the continuity of the received probe: the lowest level of
+any 6.67\ ms period (dropouts) and sudden timing steps between periods
+(slipped or repeated samples, typically in a sound interface). With
+.BR \-v ,
+the timing of every transmission is logged.
+.PP
+Comparing L1 and L2 shows how the channel depends on level: for every carrier
+the gain change beyond the 6.02\ dB step (compression) and the phase change
+(AM/PM); for every mute carrier the distortion products found in its bin at
+both levels, separated from the noise (the part that repeats with the probe),
+and the order of that distortion, from how it scales (relative to the carriers
+it rises by (n\-1)\ \(mu\ 6.02\ dB from L2 to L1). The overall level step from
+L1 to L2 is reported too.
+.PP
+Levels: L1 peaks at \-3\ dBFS and L2 at \-9\ dBFS; A, G and the tune tone are at \-10\ dBFS, the
+data burst at \-10\ dBFS RMS with peaks of at most \-3\ dBFS (a full\-scale
+sine being 0\ dBFS).
+.SH MODES
+.TP
+.B initiator
+Start a session.
+.TP
+.B responder
+Wait for an initiator and answer it. With
+.BR \-\-loop ,
+keep serving sessions until interrupted.
+.TP
+.B tune
+Key the transmitter and send a 1\ kHz sine at \-10\ dBFS, to set the audio level
+below the ALC threshold. Stops on Ctrl\-C or after
+.BR \-\-duration .
+.SH OPTIONS
+.SS Audio
+.TP
+.BR \-D ", " \-\-device " \fINAME\fR"
+ALSA device used for both playback and capture (default: default).
+.TP
+.BI \-\-rate " HZ"
+Sample rate, 44100 or 48000 (default: 48000). Format is always S16_LE.
+.TP
+.BI \-\-channels " N"
+Number of channels to open (default: 1). The signal is sent on all channels.
+.TP
+.BI \-\-channel " IDX"
+Capture channel to analyse (default: 0).
+.SS Push to talk (Hamlib)
+.TP
+.BR \-m ", " \-\-model " \fIID\fR"
+Hamlib rig model number (see
+.BR "rigctl \-l" ).
+Model 1 is the dummy rig; model 2 connects to a running
+.BR rigctld (1).
+.TP
+.BR \-r ", " \-\-rig\-file " \fIPATH\fR"
+CAT port, for example /dev/ttyUSB0 (or host:port for model 2).
+.TP
+.BR \-s ", " \-\-serial\-speed " \fIBAUD\fR"
+CAT serial speed.
+.TP
+.BR \-P ", " \-\-ptt\-type " \fITYPE\fR"
+PTT method: RIG, DTR, RTS, CM108, GPIO, ... When given without
+.BR \-m ,
+the dummy rig is used, so that only the PTT line is driven.
+.TP
+.BR \-p ", " \-\-ptt\-file " \fIPATH\fR"
+PTT port when it differs from the CAT port.
+.TP
+.BR \-C ", " \-\-set\-conf " \fIKEY=VALUE\fR"
+Additional Hamlib configuration parameter (repeatable).
+.PP
+Without
+.B \-m
+and
+.BR \-P ,
+the transmitter is not keyed (VOX or bench use).
+.SS Timing
+.TP
+.BI \-\-txdelay " MS"
+Delay between keying the transmitter and the first meaningful sample
+(default: 100).
+.TP
+.BI \-\-txtail " MS"
+Delay between the last meaningful sample and unkeying (default: 30).
+.TP
+.BI \-\-tw " MS"
+Turnaround wait t_w after the end of a received transmission (default: 100).
+.TP
+.BR \-t ", " \-\-timeout " \fIS\fR"
+Receive timeout in seconds (default: 10).
+.SS Other
+.TP
+.BI \-\-csv " FILE"
+Also write the results to FILE.
+.TP
+.BI \-\-duration " S"
+Tune mode: stop after S seconds.
+.TP
+.BR \-v ", " \-\-verbose
+More messages; twice for Hamlib debug output.
+.TP
+.BR \-V ", " \-\-version
+Print the version.
+.SH EXAMPLES
+Set the transmit level, PTT by CAT on an FT\-991A:
+.PP
+.nf
+.RS
+chanprobe tune \-m 1035 \-r /dev/ttyUSB0 \-s 38400 \-D plughw:CODEC
+.RE
+.fi
+.PP
+Responder at 44.1\ kHz, PTT on the RTS line of a serial adapter:
+.PP
+.nf
+.RS
+chanprobe responder \-\-rate 44100 \-P RTS \-p /dev/ttyUSB1 \-D hw:1,0 \-\-loop
+.RE
+.fi
+.PP
+Initiator, saving the results:
+.PP
+.nf
+.RS
+chanprobe initiator \-m 1035 \-r /dev/ttyUSB0 \-s 38400 \-D hw:1,0 \-\-csv run1.csv
+.RE
+.fi
+.SH EXIT STATUS
+0 when the session completed (results may be partial), 1 on failure,
+2 on a usage error.
+.SH NOTES
+Each probe level is analysed over 128 periods (853\ ms) in its middle, which
+leaves about 70\ ms at each end for squelch, AGC and filters to settle. Each
+level starts at the end of the guard tone before it. The results message fits one DATAC1 frame (508 bytes); SNR, compression
+and AM/PM travel with 0.5\ dB, 0.05\ dB and 0.5\(de resolution.
+.PP
+On SIGINT, SIGTERM or SIGHUP the transmitter is unkeyed before exiting.
+.SH AUTHOR
+C\['e]lestine GRAMAIZE <celestine+dev@gramaize.eu>
+.SH COPYRIGHT
+Copyright \(co 2026 C\['e]lestine GRAMAIZE.
+License GPLv3+: GNU GPL version 3 or later <https://gnu.org/licenses/gpl.html>.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+.SH SEE ALSO
+.BR rigctl (1),
+.BR rigctld (1),
+.BR aplay (1),
+.BR alsamixer (1)

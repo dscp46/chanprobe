@@ -1,0 +1,134 @@
+chanprobe (0.4.2) bookworm; urgency=medium
+
+  * Make the 3600 Hz carrier mute (60 tones, 10 mute carriers). Crest
+    factor 5.7 dB, L1 RMS level -5.7 dBFS (peak unchanged at -3 dBFS).
+  * Results message version 5.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Mon, 16 Nov 2026 11:00:00 +0000
+
+chanprobe (0.4.1) bookworm; urgency=medium
+
+  * Probing pattern: 200 ms guard tone, 1 s L1, 200 ms guard tone, 1 s L2,
+    200 ms guard tone. Each level is located from the end of the guard tone
+    before it; no level ramp between L1 and L2.
+  * The middle guard tone duration is reported along with the others.
+  * A transmission that ends after the middle guard tone gives L1 results
+    and reports L2 as not received.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Mon, 16 Nov 2026 10:00:00 +0000
+
+chanprobe (0.4.0) bookworm; urgency=medium
+
+  * Two-level probe, as V.34 L1 / L2: the probe is sent at full level (L1),
+    then 6.02 dB lower (L2), 1 s each (G L1 L2 G).
+  * New level-dependence results: compression and AM/PM per carrier, overall
+    level step, distortion in every mute carrier at both levels separated
+    from the noise, and the order of that distortion.
+  * Mute carriers now show the noise in their bin; distortion is reported
+    separately.
+  * Results message version 4 (508 bytes, one DATAC1 frame); SNR travels with
+    0.5 dB resolution.
+  * CSV output: new columns for compression, AM/PM, noise and distortion.
+  * Fix the alignment of the table separators.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Mon, 16 Nov 2026 09:00:00 +0000
+
+chanprobe (0.3.6) bookworm; urgency=medium
+
+  * SNR histogram: mark mute (suppressed) carriers with '*'; the histogram
+    and table legends now say that silent bins are mute carriers.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 23:30:00 +0000
+
+chanprobe (0.3.5) bookworm; urgency=medium
+
+  * Results display: text-mode histogram of the SNR of every carrier (Tx and
+    Rx, shared scale, side by side on wide terminals) before the table.
+    Unicode block characters in a UTF-8 locale, '#' otherwise.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 23:00:00 +0000
+
+chanprobe (0.3.4) bookworm; urgency=medium
+
+  * Results display: on a terminal wide enough, show the table as several
+    tables side by side, lowest frequencies in the leftmost table and
+    highest in the rightmost. Non-terminal output keeps a single table.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 22:00:00 +0000
+
+chanprobe (0.3.3) bookworm; urgency=medium
+
+  * Initiator: re-send tone A when the responder has not started its
+    sequence within 3 s; give up after 5 attempts.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 21:00:00 +0000
+
+chanprobe (0.3.2) bookworm; urgency=medium
+
+  * Relicense under the GNU GPL, version 3 or later.
+  * Set the author and maintainer.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 20:00:00 +0000
+
+chanprobe (0.3.1) bookworm; urgency=medium
+
+  * Fix a crash when building the results burst with codec2 1.0.x (Debian
+    bookworm): enabling the codec2 clipper also enables a transmit band-pass
+    filter that codec2 1.0.x does not define for DATAC1, leaving it
+    uninitialised. Neither is used any more; the peak level is limited by
+    chanprobe (about -5.5 dBFS at -10 dBFS RMS).
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 19:00:00 +0000
+
+chanprobe (0.3.0) bookworm; urgency=medium
+
+  * Results data link: replace Bell 202 AFSK by the codec2 FreeDV DATAC1
+    OFDM data modem (LDPC FEC, pilot-aided equalisation). About 6 dB more
+    margin on a 300-3000 Hz channel, and survives 80 ms dropouts.
+    New build dependencies: libcodec2-dev, libsamplerate0-dev.
+  * Probe analysis: audio continuity check (dropouts, sample slips), shown
+    for both directions.
+  * Results message version 3.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 18:00:00 +0000
+
+chanprobe (0.2.2) bookworm; urgency=medium
+
+  * Results receiver: detect the start of a burst from its HDLC preamble
+    flags and its end from the closing flags, instead of a level-independent
+    signal-quality measure that also fires on voice-band receiver noise.
+    A squelch-noise blip no longer ends the wait before the burst arrives,
+    and open-squelch noise no longer keeps the receiver waiting.
+  * Hard deadlines: no burst within --timeout, or a burst that has not
+    completed within the longest possible frame time, ends the wait.
+  * More precise clock offset estimate (long-baseline refinement).
+  * Self test: voice-band channel with open squelch, squelch blips.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 16:00:00 +0000
+
+chanprobe (0.2.1) bookworm; urgency=medium
+
+  * Report the phase anomaly of each carrier (received minus sent phase,
+    minus the best straight-line fit) instead of referencing it to the
+    1050 Hz carrier. Amplitudes stay relative to 1050 Hz.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 14:00:00 +0000
+
+chanprobe (0.2.0) bookworm; urgency=medium
+
+  * Measure how long the guard tones and the results burst were heard, and
+    hint at a clipped start or end of the remote transmission.
+  * Report the received probe level (dBFS RMS) on both sides.
+  * Results message version 2 (adds level and guard tone durations).
+  * Lengthen the results burst postamble to 100 ms so that a clipped tail
+    no longer destroys the frame.
+  * Log PTT and audio timing of every transmission with -v; wait for the
+    queued audio when a plugin returns from drain early.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sun, 15 Nov 2026 12:00:00 +0000
+
+chanprobe (0.1.0) bookworm; urgency=medium
+
+  * Initial release.
+
+ -- Célestine GRAMAIZE <celestine+dev@gramaize.eu>  Sat, 14 Nov 2026 12:00:00 +0000
